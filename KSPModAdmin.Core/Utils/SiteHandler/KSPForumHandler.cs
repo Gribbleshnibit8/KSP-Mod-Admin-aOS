@@ -3,9 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text.RegularExpressions;
+using System.Windows.Forms;
 using HtmlAgilityPack;
 using KSPModAdmin.Core.Controller;
 using KSPModAdmin.Core.Model;
+using KSPModAdmin.Core.Views;
+using HtmlDocument = HtmlAgilityPack.HtmlDocument;
 
 namespace KSPModAdmin.Core.Utils.SiteHandler
 {
@@ -13,6 +17,7 @@ namespace KSPModAdmin.Core.Utils.SiteHandler
 	{
 		private const string cName = "KSP Forum";
 		private const string Host = "forum.kerbalspaceprogram.com";
+		private HtmlDocument HtmlDoc;
 
 		/// <summary>
 		/// Gets the Name of the ISiteHandler.
@@ -27,7 +32,26 @@ namespace KSPModAdmin.Core.Utils.SiteHandler
 		/// <returns>True if the passed URL is a valid KSP Forum URL, otherwise false.</returns>
 		public bool IsValidURL(string url)
 		{
-			return (!string.IsNullOrEmpty(url) && Host.Equals(new Uri(url).Authority));
+			return (!string.IsNullOrEmpty(url) && Host.Equals(new Uri(url).Authority) && url.Contains("threads"));
+		}
+
+		/// <summary>
+		/// Gets the content of the site of the passed URL and parses it for ModInfos.
+		/// </summary>
+		/// <param name="url">The URL of the site to parse the ModInfos from.</param>
+		/// <returns>The ModInfos parsed from the site of the passed URL.</returns>
+		public ModInfo GetModInfo(string url)
+		{
+			HtmlDoc = new HtmlWeb().Load(url);
+			HtmlDoc.OptionFixNestedTags = true;
+			var modInfo = new ModInfo
+			{
+				SiteHandlerName = Name,
+				ModURL = ReduceToPlainUrl(url)
+			};
+			if (ParseSite(url, ref modInfo))
+				return modInfo;
+			return null;
 		}
 
 		/// <summary>
@@ -55,27 +79,6 @@ namespace KSPModAdmin.Core.Utils.SiteHandler
 			return newMod;
 		}
 
-		/// <summary>
-        /// Gets the content of the site of the passed URL and parses it for ModInfos.
-        /// </summary>
-        /// <param name="url">The URL of the site to parse the ModInfos from.</param>
-        /// <returns>The ModInfos parsed from the site of the passed URL.</returns>
-        public ModInfo GetModInfo(string url)
-		{
-			var modInfo = KSPForum.GetModInfo(url);
-
-			//var modInfo = new ModInfo
-			//{
-			//	SiteHandlerName = Name,
-			//	ModURL = url,
-			//	Name = parts[3],
-			//	Author = parts[2]
-			//};
-			//modInfo.CreationDate = kerbalMod.Versions.Last().Date;	// TODO when Adding github tags parser
-
-			return modInfo;
-        }
-
         /// <summary>
         /// Checks if updates are available for the passed mod.
         /// </summary>
@@ -88,43 +91,6 @@ namespace KSPModAdmin.Core.Utils.SiteHandler
 	        return !modInfo.Version.Equals(newModInfo.Version);
         }
 
-		private bool ParseSite(string url, ref ModInfo modInfo)
-		{
-			// changed to use the curse page as it provides the same info but also game version
-			// there's no good way to get a mod version from curse. Could use file name? Is using update date (best method?)
-			HtmlWeb web = new HtmlWeb();
-			HtmlDocument htmlDoc = web.Load(url);
-			htmlDoc.OptionFixNestedTags = true;
-
-			//// To scrape the fields, now using HtmlAgilityPack and XPATH search strings.
-			//// Easy way to get XPATH search: use chrome, inspect element, highlight the needed data and right-click and copy XPATH
-			//HtmlNode nameNode = htmlDoc.DocumentNode.SelectSingleNode("//*[@id='pagetitle']/h1/span/a");
-			////HtmlNode idNode = htmlDoc.DocumentNode.SelectSingleNode("//*[@id='project-overview']/div/div[2]/div/div/div[1]/div[2]/ul[2]/li[8]/a");
-			//HtmlNode createNode = htmlDoc.DocumentNode.SelectSingleNode("//*[@id='post_1464892']/div[1]/span[1]/span");
-
-			//HtmlNode updateNode = htmlDoc.DocumentNode.SelectSingleNode("//*[@id='project-overview']/div/div[2]/div/div/div[1]/div[2]/ul[2]/li[5]/abbr");
-
-			////HtmlNode authorNode = htmlDoc.DocumentNode.SelectSingleNode("//*[@id="yui-gen26"]/strong");
-
-			//HtmlNode gameVersionNode = htmlDoc.DocumentNode.SelectSingleNode("//*[@id='project-overview']/div/div[2]/div/div/div[1]/div[2]/ul[2]/li[3]");
-
-			//var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc); //Curse stores the date as both text and as Epoch. Go for the most precise value (Epoch).
-
-			//if (nameNode == null)
-			//	return false;
-
-			//modInfo.Name = nameNode.InnerHtml;
-			//modInfo.ProductID = idNode.Attributes["href"].Value.Substring(idNode.Attributes["href"].Value.LastIndexOf("/") + 1);
-			//modInfo.CreationDateAsDateTime = epoch.AddSeconds(Convert.ToDouble(createNode.Attributes["data-epoch"].Value));
-			//modInfo.ChangeDateAsDateTime = epoch.AddSeconds(Convert.ToDouble(updateNode.Attributes["data-epoch"].Value));
-			//modInfo.Downloads = downloadNode.InnerHtml.Split(" ")[0];
-			//modInfo.Author = authorNode.InnerHtml;
-			//modInfo.KSPVersion = gameVersionNode.InnerHtml.Split(" ")[1];
-			return true;
-
-			// more infos could be parsed here (like: short description, Tab content (overview, installation, ...), comments, ...)
-		}
-
         /// <summary>
         /// Downloads the mod.
         /// </summary>
@@ -135,6 +101,24 @@ namespace KSPModAdmin.Core.Utils.SiteHandler
         {
             if (modInfo == null)
                 return false;
+
+			var downloadInfos = GetDownloadInfos();
+			DownloadInfo selected = null;
+
+			if (downloadInfos.Count > 1)
+			{
+				// create new selection form if more than one download option found
+				var dlg = new frmSelectDownload(downloadInfos);
+				if (dlg.ShowDialog() != DialogResult.OK)
+					return false;
+
+				selected = dlg.SelectedLink;
+				dlg.InvalidateView();
+			}
+			else
+			{
+				selected = downloadInfos.First();
+			}
 
             string downloadUrl = GetDownloadUrl(modInfo);
 			modInfo.LocalPath = Path.Combine(OptionsController.DownloadPath, GetDownloadName(downloadUrl));
@@ -150,51 +134,74 @@ namespace KSPModAdmin.Core.Utils.SiteHandler
 	    /// <returns>The plain url to the mod, where the ModInfos would be get from.</returns>
 	    public string ReduceToPlainUrl(string url)
 	    {
-	        return url;
+			return url.Substring(0, url.IndexOf('-'));
 	    }
 
+		private bool ParseSite(string url, ref ModInfo modInfo)
+		{
+			// To scrape the fields, now using HtmlAgilityPack and XPATH search strings.
+			// Easy way to get XPATH search: use chrome, inspect element, highlight the needed data and right-click and copy XPATH
+
+			// gets name, version, and ID
+			HtmlNode nameNode = HtmlDoc.DocumentNode.SelectSingleNode("//*[@id='pagetitle']/h1/span/a");
+			HtmlNode authorNode = HtmlDoc.DocumentNode.SelectSingleNode("//*[@id='posts']/li[1]/div[2]/div[1]/div[1]/div[1]/a");
+			HtmlNode createNode = HtmlDoc.DocumentNode.SelectSingleNode("//*[@id='posts']/li[1]/div[1]/span[1]");
+			HtmlNode updateNode = HtmlDoc.DocumentNode.SelectSingleNode("//*[@id='posts']/li[1]/div[2]/div[2]/div[2]/blockquote[1]");
+
+			//*[@id='posts']/li[1]/div[2]/div[2]/div[1]/div
+
+			if (nameNode == null)
+				return false;
+
+			modInfo.Name = nameNode.InnerHtml;
+			modInfo.ProductID = new Regex(@".*\/(.*?)-.*").Replace(nameNode.Attributes["href"].Value, "$1");
+			modInfo.KSPVersion = new Regex(@"\[(.*)\].*").Replace(nameNode.InnerHtml, "$1");
+			modInfo.Author = authorNode.InnerText.Trim();
+
+			modInfo.CreationDateAsDateTime = GetDateTime(createNode.InnerText.Trim());
+			modInfo.ChangeDateAsDateTime =  GetDateTime(updateNode.InnerText.Trim());
+
+			return true;
+
+			// more infos could be parsed here (like: short description, Tab content (overview, installation, ...), comments, ...)
+		}
+
+		/// <summary>
+		/// Converts a date string into a DateTime object
+		/// </summary>
+		/// <param name="dateString">The string of text to convert</param>
+		/// <returns>DateTime object</returns>
 	    private DateTime GetDateTime(string dateString)
         {
-	        var dateParts = dateString.Split(new string[] {"-"}, StringSplitOptions.None);
-			return new DateTime(Convert.ToInt32(dateParts[0]), Convert.ToInt32(dateParts[2]), Convert.ToInt32(dateParts[1]));
+			dateString = HtmlEntity.DeEntitize(dateString);
 
-			//int index = dateString.IndexOf(",") + 2;
-			//dateString = dateString.Substring(index);
-			//index = dateString.IndexOf(" ") + 1;
-			//index = dateString.IndexOf(" ", index) + 1;
-			//index = dateString.IndexOf(" ", index) + 1;
-			//index = dateString.IndexOf(" ", index);
-			//string date = dateString.Substring(0, index);
-			//index = dateString.IndexOf("(");
-			//string tempTimeZone = dateString.Substring(index).Substring(0);
-			//index = tempTimeZone.IndexOf("-");
-			//if (index < 0)
-			//	index = tempTimeZone.IndexOf("+") + 1;
-			//else
-			//	index += 1;
-			//string timeZone = tempTimeZone.Substring(0, index);
-			//tempTimeZone = tempTimeZone.Substring(index);
-			//index = tempTimeZone.IndexOf(":");
-			//if (index < 2)
-			//	timeZone += "0" + tempTimeZone;
-			//else
-			//	timeZone += tempTimeZone;
+			DateTime date;
 
-			//TimeZoneInfo curseZone = null;
-			//foreach (TimeZoneInfo zone in TimeZoneInfo.GetSystemTimeZones())
-			//{
-			//	if (!zone.DisplayName.StartsWith(timeZone))
-			//		continue;
+			// Standard creation date and edit date longer than 2 days
+			if (DateTime.TryParse(new Regex(@"(st|rd|th|nd|at)").Replace(dateString, ""), out date))
+				return date;
 
-			//	curseZone = zone;
-			//	break;
-			//}
+			// Prepare an edited date for parsing
+			dateString = dateString.Substring(dateString.IndexOf(';') + 1);
+			// TODO if forums use localization these strings need localization
+			if (dateString.Contains("Today"))
+			{
+				date = DateTime.Now;
+				dateString = dateString.Replace("Today at", "").Trim();
+				var time = Convert.ToDateTime(dateString);
+				return new DateTime(date.Year, date.Month, date.Day, time.Hour, time.Minute, time.Second);
+			}
 
-			//DateTime myDate = DateTime.MinValue;
-			//if (DateTime.TryParse(date, out myDate) && curseZone != null)
-			//	return TimeZoneInfo.ConvertTime(myDate, curseZone, TimeZoneInfo.Local);
-			//else
-			//	return DateTime.MinValue;
+			if (dateString.Contains("Yesterday"))
+			{
+				date = DateTime.Now.AddDays(-1);
+				dateString = dateString.Replace("Yesterday at", "").Trim();
+				var time = Convert.ToDateTime(dateString);
+				return new DateTime(date.Year, date.Month, date.Day, time.Hour, time.Minute, time.Second);
+			}
+
+			// If all else fails just make the date today
+			return DateTime.Now;
         }
 
         private string GetDownloadUrl(ModInfo modInfo)
@@ -226,23 +233,52 @@ namespace KSPModAdmin.Core.Utils.SiteHandler
 		/// <returns>An array of the url segments</returns>
 		private List<string> GetUrlParts(string url)
 		{
-			// Split the url into parts
-			var parts = new List<string> {new Uri(url).Scheme, new Uri(url).Authority};
-			parts.AddRange(new Uri(url).Segments);
+			List<string> parts = null;
 
-			for (int index = 0; index < parts.Count; index++)
-			{
-				parts[index] = parts[index].Trim(new char[] { '/' });
-			}
+			//for (int index = 0; index < parts.Count; index++)
+			//{
+			//	parts[index] = parts[index].Trim(new char[] { '/' });
+			//}
 
-			// Remove empty parts from the list
-			parts = parts.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
+			
 
-			// TODO Error message should go wherever strings are going.
-			if (parts.Count < 4)
-				throw new System.ArgumentException("GitHub URL must point to a repository.");
+			//// Remove empty parts from the list
+			//parts = parts.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
+
+			//// TODO Error message should go wherever strings are going.
+			//if (parts.Count < 4)
+			//	throw new System.ArgumentException("Forum URL must point to a thread.");
 
 			return parts;
+		}
+
+		private List<DownloadInfo> GetDownloadInfos()
+		{
+			var links = new List<DownloadInfo>();
+			foreach (var link in HtmlDoc.DocumentNode.SelectNodes("//*[@id='posts']/li[1]/div[2]/div[2]/div/div/div/blockquote//a"))
+			{
+				var uri = link.Attributes["href"].Value;
+				if (Uri.IsWellFormedUriString(uri, UriKind.Absolute))
+				{
+					var siteHandler = SiteHandlerManager.GetSiteHandlerByURL(uri);
+					var dInfo = new DownloadInfo { Name = link.InnerText };
+
+					// If there's a handler for this we know it will be supported, get as much information as possible
+					if (siteHandler != null)
+					{
+						dInfo.KnownHost = true;
+						if (dInfo.Name == null || dInfo.Name.Contains("://"))
+							dInfo.Name = siteHandler.Name;
+					}
+
+					// Get the URL
+					dInfo.DownloadURL = uri;
+
+					links.Add(dInfo);
+
+				}
+			}
+			return links;
 		}
     }
 }

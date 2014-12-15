@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.Remoting.Messaging;
 using System.Windows.Forms;
@@ -101,5 +102,27 @@ namespace KSPModAdmin.Core.Views
         {
             return new KSPDialogResult(DialogResult, SelectedLink);
         }
+
+		private void cbLinks_DropDown(object sender, EventArgs e)
+		{
+			ComboBox senderComboBox = (ComboBox)sender;
+			int width = senderComboBox.DropDownWidth;
+			Graphics g = senderComboBox.CreateGraphics();
+			Font font = senderComboBox.Font;
+			int vertScrollBarWidth =
+				(senderComboBox.Items.Count > senderComboBox.MaxDropDownItems)
+				? SystemInformation.VerticalScrollBarWidth : 0;
+
+			foreach (DownloadInfo dInfo in ((ComboBox)sender).Items)
+			{
+				int newWidth = (int)g.MeasureString(dInfo.ToString(), font).Width
+				               + vertScrollBarWidth;
+				if (width < newWidth)
+				{
+					width = newWidth;
+				}
+			}
+			senderComboBox.DropDownWidth = width;
+		}
     }
 }
