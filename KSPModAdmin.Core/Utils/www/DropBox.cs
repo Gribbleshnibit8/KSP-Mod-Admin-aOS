@@ -6,8 +6,7 @@ namespace KSPModAdmin.Core.Utils
     {
         public static bool IsValidURL(string url)
         {
-	        var host = new Uri(url).Authority;
-			return (host.Equals("dropbox.com"));
+			return (new Uri(url).Authority.Equals("dropbox.com"));
         }
 
         public static string GetDownloadURL(string url)

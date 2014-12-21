@@ -1,10 +1,14 @@
-﻿namespace KSPModAdmin.Core.Utils
+﻿using System;
+using System.Windows.Forms.VisualStyles;
+using HtmlAgilityPack;
+
+namespace KSPModAdmin.Core.Utils
 {
     public abstract class MediaFire
     {
         public static bool IsValidURL(string url)
         {
-            return (url.StartsWith("http://www.mediafire.com/") || url.StartsWith("http://mediafire.com/"));
+			return (new Uri(url).Authority.Equals("www.mediafire.com"));
         }
 
         public static string GetDownloadURL(string mediafireURL)
@@ -12,26 +16,18 @@
             if (string.IsNullOrEmpty(mediafireURL))
                 return string.Empty;
 
-            string siteContent = www.Load(mediafireURL);
-            int index = siteContent.IndexOf("kNO = \"");
-            if (index < 0)
-                return string.Empty;
-            siteContent = siteContent.Substring(index);
-            index = siteContent.IndexOf("\"") + 1;
-            if (index < 0)
-                return string.Empty;
-            int index1 = siteContent.IndexOf("\"", index);
-            if (index1 <= index)
-                return string.Empty;
-            string url = siteContent.Substring(index, index1 - index);
+	        // Load the page
+			HtmlDocument htmlDoc = new HtmlWeb().Load(mediafireURL);
+			htmlDoc.OptionFixNestedTags = true;
+			HtmlNode downloadNode = htmlDoc.DocumentNode.SelectSingleNode("//*[@class='dl-utility-nav']/ul/li[3]/a");
 
-            return (url.StartsWith("http:/")) ? url : string.Empty;
+	        return downloadNode.Attributes["href"].Value;
         }
 
-        public static string GetFileName(string downloadURL)
+        public static string GetFileName(string downloadUrl)
         {
-            int index = downloadURL.LastIndexOf("/");
-            string filename = downloadURL.Substring(index + 1);
+            int index = downloadUrl.LastIndexOf("/");
+            string filename = downloadUrl.Substring(index + 1);
             if (filename.Contains("?"))
                 filename = filename.Substring(0, filename.IndexOf("?"));
 

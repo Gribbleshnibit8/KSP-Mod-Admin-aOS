@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using HtmlAgilityPack;
@@ -17,7 +18,7 @@ namespace KSPModAdmin.Core.Utils.SiteHandler
 	{
 		private const string cName = "KSP Forum";
 		private const string Host = "forum.kerbalspaceprogram.com";
-		private HtmlDocument HtmlDoc;
+		private static HtmlDocument HtmlDoc;
 
 		/// <summary>
 		/// Gets the Name of the ISiteHandler.
@@ -120,11 +121,48 @@ namespace KSPModAdmin.Core.Utils.SiteHandler
 				selected = downloadInfos.First();
 			}
 
-            string downloadUrl = GetDownloadUrl(modInfo);
-			modInfo.LocalPath = Path.Combine(OptionsController.DownloadPath, GetDownloadName(downloadUrl));
-            www.DownloadFile(downloadUrl, modInfo.LocalPath, downloadProgressHandler);
+			// For a known handler convert the mod to that handler for version tracking.
+			// We might want to ask the user, but since there's no way to get mod version
+			// reliably from forum converting to a known handler is probably the best way.
+	        if (selected.KnownHost)
+	        {
+				ISiteHandler siteHandler = SiteHandlerManager.GetSiteHandlerByURL(selected.DownloadURL);
+		        modInfo = siteHandler.GetModInfo(selected.DownloadURL);
+				return siteHandler.DownloadMod(ref modInfo, downloadProgressHandler);
+	        }
 
-            return File.Exists(modInfo.LocalPath);
+
+			// For unknown sources we make a best guess at downloading the mod based on the url.
+			// Checks file type if it's a direct file, or compares to various alternative file
+			// services such as Dropbox and Mediafire
+			// TODO: Add support for multiple non-versioned sites such as dropbox and mediafire.
+
+	        string downloadUrl = null;
+
+			// If the url ends in a known type extension (from constants) we will download it
+			// as a plain file and add it. Otherwise a message will be displayed stating it is unknown.
+	        if (selected.DownloadURL.Contains(Constants.EXT_ZIP) || selected.DownloadURL.Contains(Constants.EXT_RAR) ||
+	            selected.DownloadURL.Contains(Constants.EXT_7ZIP) || selected.DownloadURL.Contains(Constants.EXT_CRAFT) ||
+	            selected.DownloadURL.Contains(Constants.EXT_KSP_SAVE) || selected.DownloadURL.Contains(Constants.EXT_CFG))
+	        {
+				downloadUrl = selected.DownloadURL;
+				modInfo.LocalPath = Path.Combine(OptionsController.DownloadPath, GetDownloadName(downloadUrl));
+	        }
+
+
+	        if (DropBox.IsValidURL(selected.DownloadURL))
+	        {
+				downloadUrl = DropBox.GetDownloadURL(selected.DownloadURL);
+				modInfo.LocalPath = Path.Combine(OptionsController.DownloadPath, DropBox.GetFileName(selected.DownloadURL));
+	        }
+			else if (MediaFire.IsValidURL(selected.DownloadURL))
+			{
+				downloadUrl = MediaFire.GetDownloadURL(selected.DownloadURL);
+				modInfo.LocalPath = Path.Combine(OptionsController.DownloadPath, MediaFire.GetFileName(downloadUrl));
+			}
+
+	        if (downloadUrl != null) www.DownloadFile(downloadUrl, modInfo.LocalPath, downloadProgressHandler);
+	        return File.Exists(modInfo.LocalPath);
         }
 
 	    /// <summary>
@@ -137,7 +175,7 @@ namespace KSPModAdmin.Core.Utils.SiteHandler
 			return url.Substring(0, url.IndexOf('-'));
 	    }
 
-		private bool ParseSite(string url, ref ModInfo modInfo)
+		private static bool ParseSite(string url, ref ModInfo modInfo)
 		{
 			// To scrape the fields, now using HtmlAgilityPack and XPATH search strings.
 			// Easy way to get XPATH search: use chrome, inspect element, highlight the needed data and right-click and copy XPATH
@@ -171,7 +209,7 @@ namespace KSPModAdmin.Core.Utils.SiteHandler
 		/// </summary>
 		/// <param name="dateString">The string of text to convert</param>
 		/// <returns>DateTime object</returns>
-	    private DateTime GetDateTime(string dateString)
+	    private static DateTime GetDateTime(string dateString)
         {
 			dateString = HtmlEntity.DeEntitize(dateString);
 
@@ -204,55 +242,12 @@ namespace KSPModAdmin.Core.Utils.SiteHandler
 			return DateTime.Now;
         }
 
-        private string GetDownloadUrl(ModInfo modInfo)
-        {
-	        string url;
-	        if (!modInfo.ModURL.Contains("releases"))
-	        {
-				var parts = GetUrlParts(modInfo.ModURL);
-				url = parts[0] + "://" + parts[1] + "/" + parts[2] + "/" + parts[3] + "/releases";
-	        }
-	        else
-	        {
-		        url = modInfo.ModURL;
-	        }
-
-			return url;
-        }
-
-		private string GetDownloadName(string url)
+		private static string GetDownloadName(string url)
 		{
 			return new Uri(url).Segments.Last();
 		}
 
-		/// <summary>
-		/// Splits a url into it's segment parts
-		/// </summary>
-		/// <param name="url">A url to split</param>
-		/// <exception cref="ArgumentException"></exception>
-		/// <returns>An array of the url segments</returns>
-		private List<string> GetUrlParts(string url)
-		{
-			List<string> parts = null;
-
-			//for (int index = 0; index < parts.Count; index++)
-			//{
-			//	parts[index] = parts[index].Trim(new char[] { '/' });
-			//}
-
-			
-
-			//// Remove empty parts from the list
-			//parts = parts.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList();
-
-			//// TODO Error message should go wherever strings are going.
-			//if (parts.Count < 4)
-			//	throw new System.ArgumentException("Forum URL must point to a thread.");
-
-			return parts;
-		}
-
-		private List<DownloadInfo> GetDownloadInfos()
+		private static List<DownloadInfo> GetDownloadInfos()
 		{
 			var links = new List<DownloadInfo>();
 			foreach (var link in HtmlDoc.DocumentNode.SelectNodes("//*[@id='posts']/li[1]/div[2]/div[2]/div/div/div/blockquote//a"))
