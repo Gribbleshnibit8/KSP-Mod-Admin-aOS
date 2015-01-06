@@ -226,6 +226,41 @@ namespace KSPModAdmin.Core.Controller
 
 
         /// <summary>
+        /// Sets the ToolTip values to all controls of the view.
+        /// </summary>
+        /// <param name="ttOnOff"></param>
+        /// <param name="ttDelay"></param>
+        /// <param name="ttDisplayTime"></param>
+        internal static void SetToolTipValues(bool ttOnOff, decimal ttDelay, decimal ttDisplayTime)
+        {
+            SetToolTipValues(ttOnOff, ttDelay, ttDisplayTime, View);
+        }
+
+        /// <summary>
+        /// Sets the ToolTip values to all controls of the view.
+        /// </summary>
+        /// <param name="ttOnOff"></param>
+        /// <param name="ttDelay"></param>
+        /// <param name="ttDisplayTime"></param>
+        /// <param name="control"></param>
+        protected static void SetToolTipValues(bool ttOnOff, decimal ttDelay, decimal ttDisplayTime, Control control)
+        {
+            if (control == null)
+                return;
+
+            ToolTip tt = ControlTranslator.GetToolTipControl(control);
+            if (tt != null)
+            {
+                tt.Active = ttOnOff;
+                tt.InitialDelay = (int)(ttDelay * 1000);
+                tt.AutoPopDelay = (int)(ttDisplayTime * 1000);
+            }
+
+            foreach (Control ctrl in control.Controls)
+                SetToolTipValues(ttOnOff, ttDelay, ttDisplayTime, ctrl);
+        }
+
+        /// <summary>
         /// Loads all available languages.
         /// </summary>
         protected static void LoadLanguages()
@@ -564,7 +599,7 @@ namespace KSPModAdmin.Core.Controller
         /// </summary>
         protected static void AsyncTaskDone(object sender)
         {
-            View.cbKSPPath.Enabled = false;
+            View.cbKSPPath.Enabled = true;
         }
 
         /// <summary>
@@ -573,7 +608,7 @@ namespace KSPModAdmin.Core.Controller
         /// </summary>
         protected static void AsyncTaskStarted(object sender)
         {
-            View.cbKSPPath.Enabled = true;
+            View.cbKSPPath.Enabled = false;
         }
 
         /// <summary>

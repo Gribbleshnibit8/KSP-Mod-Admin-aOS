@@ -52,13 +52,14 @@ namespace KSPModAdmin.Core.Controller
 
         #region Constants
 
-        public const string KSP = "KSP";
+        public const string KSP_SEARCH_PATTERN = "*K*S*P*";
+        public const string STEAM_PATH = "Steam\\SteamApps\\common";
+        public const string STEAM_PATH_LINUX = "/.steam/steam/SteamApps/common";
+        public const string STEAM_PATH_MAC = "/Library/Application Support/Steam";
         public const string KSPMA = "KSPModAdmin";
         public const string KSPINSTALL = "KSP install";
         public const string DOWNLOAD = "download";
         public const string DOWNLOADS = "Downloads";
-        public const string STEAM = "Steam";
-        public const string STEAMAPP_PATH = "SteamApps\\common";
         public const string RECYCLE_BIN = "recycle.bin";
         public const string START = "Start";
         public const string STOP = "Stop";
@@ -139,6 +140,15 @@ namespace KSPModAdmin.Core.Controller
         {
             get { return (View != null) ? View.ModUpdateBehavior : ModUpdateBehavior.CopyDestination; }
             set { if (View != null) View.ModUpdateBehavior = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the a flag that determines if a mod archive should be deleted after an update.
+        /// </summary>
+        public static bool DeleteOldArchivesAfterUpdate
+        {
+            get { return (View != null) ? View.DeleteOldArchivesAfterUpdate : false; }
+            set { if (View != null) View.DeleteOldArchivesAfterUpdate = value; }
         }
 
         #endregion
@@ -251,6 +261,100 @@ namespace KSPModAdmin.Core.Controller
         #endregion
 
         #region Misc
+
+        #region Destination detection
+
+        /// <summary>
+        /// Gets or sets the destination detection type.
+        /// </summary>
+        public static DestinationDetectionType DestinationDetectionType
+        {
+            get
+            {
+                return (View != null) ? View.DestinationDetectionType : DestinationDetectionType.SmartDetection;
+            }
+            set
+            {
+                if (View != null && value != View.DestinationDetectionType)
+                    View.DestinationDetectionType = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the flag to determine of mod archives should be copied to GameData folder, if no destination was detected..
+        /// </summary>
+        public static bool CopyToGameData
+        {
+            get
+            {
+                return (View != null) ? View.CopyToGameData : false;
+            }
+            set
+            {
+                if (View != null && value != View.CopyToGameData)
+                    View.CopyToGameData = value;
+            }
+        }
+
+        #endregion
+
+        #region ToolTip
+
+        /// <summary>
+        /// Gets or sets the flag to determine if the ToolTip should be activated or not.
+        /// </summary>
+        public static bool ToolTipOnOff
+        {
+            get
+            {
+                return (View != null) ? View.ToolTipOnOff : true;
+            }
+            set
+            {
+                if (View != null && value != View.ToolTipOnOff)
+                    View.ToolTipOnOff = value;
+
+                MainController.SetToolTipValues(ToolTipOnOff, ToolTipDelay, ToolTipDisplayTime);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the delay time after a ToolTip should be displayed.
+        /// </summary>
+        public static decimal ToolTipDelay
+        {
+            get
+            {
+                return (View != null) ? View.ToolTipDelay : 0.5m;
+            }
+            set
+            {
+                if (View != null && value != View.ToolTipDelay)
+                    View.ToolTipDelay = value;
+
+                MainController.SetToolTipValues(ToolTipOnOff, ToolTipDelay, ToolTipDisplayTime);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the display time of the ToolTips.
+        /// </summary>
+        public static decimal ToolTipDisplayTime
+        {
+            get
+            {
+                return (View != null) ? View.ToolTipDisplayTime : 10.0m;
+            }
+            set
+            {
+                if (View != null && value != View.ToolTipDisplayTime)
+                    View.ToolTipDisplayTime = value;
+                
+                MainController.SetToolTipValues(ToolTipOnOff, ToolTipDelay, ToolTipDisplayTime);
+            }
+        }
+
+        #endregion
 
         /// <summary>
         /// Gets or sets the flag to determine if the Conflict detection should be turned on or off.
@@ -970,16 +1074,41 @@ namespace KSPModAdmin.Core.Controller
             EventDistributor.InvokeAsyncTaskStarted(Instance);
             AsyncTask<string[]>.DoWork(() =>
             {
-                // ToDo: Search for other OSs!
-                string path = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
-                string[] paths = Directory.GetDirectories(path, STEAM, SearchOption.TopDirectoryOnly);
-                if (paths.Length == 0)
+                string steamPath = string.Empty;
+                if (Environment.OSVersion.Platform == PlatformID.MacOSX)
+                    steamPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), STEAM_PATH_MAC);
+                else if (Environment.OSVersion.Platform == PlatformID.Unix)
+                    steamPath = Path.Combine(Environment.GetEnvironmentVariable(Constants.HOME), STEAM_PATH_LINUX);
+                else
                 {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-                    paths = Directory.GetDirectories(path, STEAM, SearchOption.TopDirectoryOnly);
+                    steamPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), STEAM_PATH);
+                    if (!Directory.Exists(steamPath))
+                        steamPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), STEAM_PATH);
                 }
 
-                return paths;
+                List<string> kspPaths = new List<string>();
+                if (!string.IsNullOrEmpty(steamPath) && Directory.Exists(steamPath))
+                {
+                    string[] dirs = Directory.GetDirectories(steamPath, KSP_SEARCH_PATTERN, SearchOption.TopDirectoryOnly);
+                    foreach (string dir in dirs)
+                    {
+                        if (KSPPathHelper.IsKSPInstallFolder(dir))
+                            kspPaths.Add(dir);
+                        else
+                        {
+                            string[] subDirs = Directory.GetDirectories(dir);
+                            foreach (string subDir in subDirs)
+                            {
+                                if (KSPPathHelper.IsKSPInstallFolder(subDir))
+                                    kspPaths.Add(subDir);
+                            }
+                        }
+                    }
+                }
+                else
+                    Messenger.AddInfo(Messages.MSG_STEAM_FOLDER_NOT_FOUND);
+
+                return kspPaths.ToArray();
             }, (paths, ex) =>
             {
                 EventDistributor.InvokeAsyncTaskDone(Instance);
@@ -991,25 +1120,26 @@ namespace KSPModAdmin.Core.Controller
                 }
                 else
                 {
-                    foreach (string p in paths)
+                    foreach (string path in paths)
                     {
-                        string d = Path.Combine(p, STEAMAPP_PATH);
-                        string[] dirs = Directory.GetDirectories(d, KSP, SearchOption.TopDirectoryOnly);
-
-                        List<string> list = new List<string>();
-                        foreach (string dir in dirs)
+                        bool stop = false;
+                        switch (AskUser(path))
                         {
-                            if (mStopSearch || !SearchSubDirs(dir, 2, ref list))
+                            case DialogResult.Yes:
+                                TryAddPaths(new[] {path});
+                                break;
+                            case DialogResult.Cancel:
+                                stop = true;
                                 break;
                         }
-
-                        TryAddPaths(list.ToArray());
+                        if (stop)
+                            break;
                     }
 
-                    if (paths.Length == 0)
-                        Messenger.AddInfo(Messages.MSG_STEAM_FOLDER_NOT_FOUND);
-                    else
+                    if (paths.Length > 0)
                         Messenger.AddInfo(Messages.MSG_STEAM_SEARCH_DONE);
+                    else
+                        Messenger.AddInfo(Messages.MSG_KSP_FOLDER_NOT_FOUND);
                 }
             });
         }

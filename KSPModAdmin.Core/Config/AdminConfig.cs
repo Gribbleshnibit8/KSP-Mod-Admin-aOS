@@ -67,7 +67,7 @@ namespace KSPModAdmin.Core.Config
                 foreach (XmlAttribute att in maxim[0].Attributes)
                 {
                     if (att.Name == Constants.MAXIM && att.Value != null)
-                        MainController.View.WindowState = (att.Value.ToLower() == "true") ? FormWindowState.Maximized : FormWindowState.Normal;
+                        MainController.View.WindowState = (att.Value.Equals(Constants.TRUE, StringComparison.CurrentCultureIgnoreCase) ? FormWindowState.Maximized : FormWindowState.Normal);
                 }
             }
 
@@ -105,28 +105,9 @@ namespace KSPModAdmin.Core.Config
             }
 
             ModSelectionViewInfo vInfo = new ModSelectionViewInfo();
-            XmlNodeList colWidths = doc.GetElementsByTagName(Constants.MODSELECTIONCOLUMNS);
-            if (colWidths.Count >= 1)
-            {
-                var columns = colWidths[0];
-                foreach (XmlNode col in columns.ChildNodes)
-                {
-                    int id = -1;
-                    int width = 0;
-                    foreach (XmlAttribute att in col.Attributes)
-                    {
-                        if (att.Name == Constants.ID && !string.IsNullOrEmpty(att.Value))
-                            id = int.Parse(att.Value);
-                        else if (att.Name == Constants.WIDTH && !string.IsNullOrEmpty(att.Value))
-                            width = int.Parse(att.Value);
-                    }
+            vInfo.ModSelectionColumnsInfo = new ModSelectionColumnsInfo(doc);
 
-                    if (width > 0)
-                        vInfo.ModSelectionColumnWidths.Add(width);
-                }
-            }
-            
-            colWidths = doc.GetElementsByTagName(Constants.MODINFOCOLUMNS);
+            XmlNodeList colWidths = doc.GetElementsByTagName(Constants.MODINFOCOLUMNS);
             if (colWidths.Count >= 1)
             {
                 var columns = colWidths[0];
@@ -160,15 +141,41 @@ namespace KSPModAdmin.Core.Config
             if (!vInfo.IsEmpty)
                 ModSelectionController.View.SetModSelectionViewInfo(vInfo);
 
+            XmlNodeList destinationDetectionNode = doc.GetElementsByTagName(Constants.DESTINATIONDETECTIONOPTIONS);
+            if (destinationDetectionNode.Count >= 1)
+            {
+                foreach (XmlAttribute att in destinationDetectionNode[0].Attributes)
+                {
+                    if (att.Name == Constants.TYPE && att.Value != null)
+                        OptionsController.DestinationDetectionType = (DestinationDetectionType)int.Parse(att.Value);
+                    else if (att.Name == Constants.FALLBACK && att.Value != null)
+                        OptionsController.CopyToGameData = (att.Value.Equals(Constants.TRUE, StringComparison.CurrentCultureIgnoreCase));
+                }
+            }
+
+            XmlNodeList ttOptions = doc.GetElementsByTagName(Constants.TOOLTIPOPTIONS);
+            if (ttOptions.Count >= 1)
+            {
+                foreach (XmlAttribute att in ttOptions[0].Attributes)
+                {
+                    if (att.Name == Constants.ONOFF && att.Value != null)
+                        OptionsController.ToolTipOnOff = (att.Value.Equals(Constants.TRUE, StringComparison.CurrentCultureIgnoreCase));
+                    else if (att.Name == Constants.DELAY && att.Value != null)
+                        OptionsController.ToolTipDelay = decimal.Parse(att.Value);
+                    else if (att.Name == Constants.DISPLAYTIME && att.Value != null)
+                        OptionsController.ToolTipDisplayTime = decimal.Parse(att.Value);
+                }
+            }
+
             XmlNodeList conflictDetectionOnnOff = doc.GetElementsByTagName(Constants.CONFLICTDETECTIONOPTIONS);
             if (conflictDetectionOnnOff.Count >= 1)
             {
                 foreach (XmlAttribute att in conflictDetectionOnnOff[0].Attributes)
                 {
                     if (att.Name == Constants.ONOFF && att.Value != null)
-                        OptionsController.ConflictDetectionOnOff = (att.Value.ToLower() == "true");
+                        OptionsController.ConflictDetectionOnOff = (att.Value.Equals(Constants.TRUE, StringComparison.CurrentCultureIgnoreCase));
                     else if (att.Name == Constants.SHOWCONFLICTSOLVER && att.Value != null)
-                        OptionsController.ShowConflictSolver = (att.Value.ToLower() == "true");
+                        OptionsController.ShowConflictSolver = (att.Value.Equals(Constants.TRUE, StringComparison.CurrentCultureIgnoreCase));
                 }
             }
 
@@ -308,7 +315,7 @@ namespace KSPModAdmin.Core.Config
                 foreach (XmlAttribute att in nodes[0].Attributes)
                 {
                     if ((att.Name == Constants.VALUE || att.Name == Constants.CHECKFORUPDATES) && att.Value != null)
-                        OptionsController.VersionCheck = (att.Value.ToLower() == "true");
+                        OptionsController.VersionCheck = (att.Value.Equals(Constants.TRUE, StringComparison.CurrentCultureIgnoreCase));
                 }
             }
 
@@ -404,24 +411,12 @@ namespace KSPModAdmin.Core.Config
             generalNode.AppendChild(node);
 
             // ModSelection column widths
-            int i = 0;
-            node = doc.CreateElement(Constants.MODSELECTIONCOLUMNS);
             var vInfo = ModSelectionController.View.GetModSelectionViewInfo();
-            foreach (var colWidth in vInfo.ModSelectionColumnWidths)
-            {
-                XmlNode columnNode = ConfigHelper.CreateConfigNode(doc, Constants.COLUMN, new string[,]
-                {
-                    { Constants.ID, i.ToString() },
-                    { Constants.WIDTH, colWidth.ToString() }
-                });
-                node.AppendChild(columnNode);
-
-                i++;
-            }
-            generalNode.AppendChild(node);
+            if (vInfo.ModSelectionColumnsInfo != null)
+                vInfo.ModSelectionColumnsInfo.ToXml2(generalNode);
 
             // ModInfo column widths
-            i = 0;
+            int i = 0;
             node = doc.CreateElement(Constants.MODINFOCOLUMNS);
             foreach (var colWidth in vInfo.ModInfosColumnWidths)
             {
@@ -438,6 +433,23 @@ namespace KSPModAdmin.Core.Config
 
             // ModSelection splitter position
             node = ConfigHelper.CreateConfigNode(doc, Constants.MODINFOSSPLITTERPOS, Constants.POSITION, vInfo.ModInfosSplitterPos.ToString());
+            generalNode.AppendChild(node);
+
+            // Destination detection options
+            node = ConfigHelper.CreateConfigNode(doc, Constants.DESTINATIONDETECTIONOPTIONS, new string[,]
+            {
+                { Constants.TYPE, ((int)OptionsController.DestinationDetectionType).ToString() },
+                { Constants.FALLBACK, OptionsController.CopyToGameData.ToString() }
+            });
+            generalNode.AppendChild(node);
+
+            // ToolTip options
+            node = ConfigHelper.CreateConfigNode(doc, Constants.TOOLTIPOPTIONS, new string[,]
+            {
+                { Constants.ONOFF, OptionsController.ToolTipOnOff.ToString() },
+                { Constants.DELAY, OptionsController.ToolTipDelay.ToString() },
+                { Constants.DISPLAYTIME, OptionsController.ToolTipDisplayTime.ToString() }
+            });
             generalNode.AppendChild(node);
 
             // Conflict detection options

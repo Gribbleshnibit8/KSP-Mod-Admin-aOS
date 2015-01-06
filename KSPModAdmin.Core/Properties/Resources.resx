@@ -274,11 +274,11 @@
   <data name="component_replace" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\component_replace.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="data_add" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\data_add.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="cc_license" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\cc_license.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="gears" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\gears.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="component_data_delete" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\component_data_delete.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -340,6 +340,9 @@
   <data name="data_delete" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\data_delete.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="download" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\download.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="component_folder_reset" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\component_folder_reset.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -379,6 +382,9 @@
   <data name="components_replace_earth" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\components_replace_earth.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="KMA2_48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\KMA2_48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="loading_icon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\loading_icon;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
@@ -400,8 +406,8 @@
   <data name="folder_add1" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\folder_add1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="download" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\download.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="data_add" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\data_add.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="component" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\component.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -421,7 +427,7 @@
   <data name="earth_checkbox_checked" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\earth_checkbox_checked.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="KMA2_48" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\KMA2_48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="components_folder_reset" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\components_folder_reset.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

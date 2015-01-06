@@ -53,10 +53,10 @@ namespace KSPModAdmin.Core
         {
             get
             {
-                return new string[] { Constants.KSP_ROOT, Constants.PARTS, Constants.PLUGINS, 
-                                      Constants.PLUGINDATA, Constants.RESOURCES, Constants.INTERNALS,
-                                      Constants.SHIPS, Constants.KSPDATA, Constants.SAVES, 
-                                      Constants.VAB, Constants.SPH, Constants.GAMEDATA };
+                return new string[] { Constants.KSP_ROOT, Constants.GAMEDATA, Constants.PLUGINS, 
+                                      Constants.PLUGINDATA, Constants.PARTS, Constants.RESOURCES,
+                                      Constants.INTERNALS, Constants.KSPDATA, Constants.SAVES, 
+                                      Constants.SHIPS, Constants.VAB, Constants.SPH };
             }
         }
 
@@ -70,6 +70,7 @@ namespace KSPModAdmin.Core
                     case PlatformID.Unix:
                         return KSP_EXE_LINUX;
                     case PlatformID.MacOSX:
+                        return KSP_EXE_MAC;
                     default:
                         return KSP_EXE_WIN;
                 }
@@ -84,6 +85,7 @@ namespace KSPModAdmin.Core
                     case PlatformID.Unix:
                         return KSP_X64_EXE_LINUX;
                     case PlatformID.MacOSX:
+                        return KSP_X64_EXE_MAC;
                     default:
                         return KSP_X64_EXE_WIN;
                 }
@@ -91,11 +93,15 @@ namespace KSPModAdmin.Core
         }
         public const string KSP_EXE_LINUX = "KSP.x86";
         public const string KSP_EXE_WIN = "KSP.exe";
+        public const string KSP_EXE_MAC = "KSP";
         public const string KSP_X64_EXE_LINUX = "KSP.x86_64";
         public const string KSP_X64_EXE_WIN = "KSP_x64.exe";
+        public const string KSP_X64_EXE_MAC = KSP_EXE_MAC;
         public const string APP_CONFIG_FILE = "KSPModAdmin_aOS.cfg";
         public const string MODS_CONFIG_FILE = "KSPModAdmin_aOS.cfg";
         public const string LINUX_PATH = ".ksp_mod_admin";
+        public const string MAC_EXE_PATH = "KSP.app\\Contents\\MacOS";
+        public const string MAC_EXE_FOLDER_NAME = "KSP.app";
 
         // XMLNode names
         public const string ROOTNODE = "ModAdminConfig";
@@ -115,6 +121,8 @@ namespace KSPModAdmin.Core
         public const string DOWNLOAD_PATH = "DownloadPath";
         public const string NAME = "Name";
         public const string LONGNAME = "LongName";
+        public const string SORTORDER = "SortOrder";
+        public const string TOOLTIPTEXT = "TooltipText";
         public const string CONTROL = "Control";
         public const string STRING = "String";
         public const string KEY = "key";
@@ -138,6 +146,7 @@ namespace KSPModAdmin.Core
         public const string RATING = "Rating";
         public const string DOWNLOADS = "Downloads";
         public const string MODURL = "ModURL";
+        public const string AVCURL = "AvcURL";
         public const string ADDITIONALURL = "AdditionalURL";
         public const string FORUMURL = "ForumURL";
         public const string CURSEFORGEURL = "CurseForgeURL";
@@ -149,8 +158,14 @@ namespace KSPModAdmin.Core
         public const string ISFILE = "IsFile";
         public const string INSTALL = "Install";
         public const string INSTALLDIR = "InstallDir";
+
+        public const string DESTINATIONDETECTIONOPTIONS = "DestinationDetectionOptions";
+        public const string FALLBACK = "FallBack";
+        public const string TOOLTIPOPTIONS = "ToolTipOptions";
         public const string CONFLICTDETECTIONOPTIONS = "ConflictDetectionOptions";
         public const string ONOFF = "OnOff";
+        public const string DELAY = "Delay";
+        public const string DISPLAYTIME = "DisplayTime";
         public const string SHOWCONFLICTSOLVER = "ShowConflictSolver";
         public const string NODECOLORS = "NodeColors";
         public const string COLOR = "Color";
@@ -163,6 +178,12 @@ namespace KSPModAdmin.Core
         public const string LAUNCHPARAMETER = "LaunchParameter";
         public const string USE64BIT = "Use64Bit";
         public const string FORCEOPENGL = "ForceOpenGL";
+        public const string TYPE = "Type";
+        public const string DATAPROPERTYNAME = "DataPropertyName";
+        public const string EDITENABLED = "EditEnabled";
+        public const string INCREMENTALSEARCHENABLED = "IncrementalSearchEnabled";
+        public const string LEFTMARGIN = "LeftMargin";
+        public const string SCALEMODE = "ScaleMode";
 
         // Form related
         public const string POSITION = "Position";
@@ -174,7 +195,7 @@ namespace KSPModAdmin.Core
         public const string WINDOWSTATE = "WindowState";
         public const string MINIM = "minimized";
         public const string MAXIM = "maximized";
-        public const string MODSELECTIONCOLUMNS = "ModSelectionColumns";
+        public const string TREEVIEWADVCOLUMNSINFO = "TreeViewAdvColumnsInfo";
         public const string MODINFOCOLUMNS = "ModInfoColumns";
         public const string MODINFOSSPLITTERPOS = "ModInfoSplitterPos";
         public const string COLUMN = "Column";
@@ -197,5 +218,7 @@ namespace KSPModAdmin.Core
 
 
         public const string KSPFOLDERTAG = "<KSPFolder>";
+
+        public const string HOME = "HOME";
     }
 }

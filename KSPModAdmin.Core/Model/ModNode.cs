@@ -98,8 +98,10 @@ namespace KSPModAdmin.Core.Model
                 modInfo.Rating = Rating;
                 modInfo.SiteHandlerName = SiteHandlerName;
                 modInfo.ModURL = ModURL;
+                modInfo.AvcURL = AvcURL;
                 modInfo.AdditionalURL = AdditionalURL;
-	            modInfo.Version = Version;
+                modInfo.Version = Version;
+                modInfo.KSPVersion = KSPVersion;
                 return modInfo;
             }
             set
@@ -118,8 +120,10 @@ namespace KSPModAdmin.Core.Model
                     Rating = value.Rating;
                     SiteHandlerName = value.SiteHandlerName;
                     ModURL = value.ModURL;
+                    AvcURL = value.AvcURL;
                     AdditionalURL = value.AdditionalURL;
                     Version = value.Version;
+                    KSPVersion = value.KSPVersion;
                 }
             }
         }
@@ -137,7 +141,7 @@ namespace KSPModAdmin.Core.Model
 		/// <summary>
 		/// Version of the game this mod is for
 		/// </summary>
-		public string GameVersion { get; set; }
+		public string KSPVersion { get; set; }
 
         /// <summary>
         /// The author of the mod.
@@ -224,6 +228,14 @@ namespace KSPModAdmin.Core.Model
         private string mSiteHandlerName = Messages.NONE;
 
         /// <summary>
+        /// Gets the SiteHandler name (Used by TreeViewAdv).
+        /// </summary>
+        public string SiteHandlerNameUI
+        {
+            get { return (ZipRoot == this) ? SiteHandlerName : string.Empty; }
+        }
+
+        /// <summary>
         /// Gets or sets the SiteHandler of the mod. Can be null!
         /// </summary>
         public ISiteHandler SiteHandler
@@ -236,6 +248,11 @@ namespace KSPModAdmin.Core.Model
         /// URL to the site of the mod.
         /// </summary>
         public string ModURL { get; set; }
+
+        /// <summary>
+        /// The URL to the AVC Plugin version file.
+        /// </summary>
+        public string AvcURL { get; set; }
 
         /// <summary>
         /// URL to a additional site.
@@ -296,6 +313,11 @@ namespace KSPModAdmin.Core.Model
         /// Local path of the mod zip archive.
         /// </summary>
         public string LocalPath { get { return Key; } }
+
+        /// <summary>
+        /// Local path of the mod zip archive.
+        /// </summary>
+        public string ArchivePath { get { return ZipRoot.LocalPath; } }
 
         /// <summary>
         /// The install destination of the node.
