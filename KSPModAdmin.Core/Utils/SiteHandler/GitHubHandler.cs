@@ -15,10 +15,6 @@ namespace KSPModAdmin.Core.Utils.SiteHandler
 	public class GitHubHandler : ISiteHandler
 	{
 		private const string cName = "GitHub";
-<<<<<<< HEAD
-		private const string Host = "github.com";
-		private const string Host2 = "raw.githubusercontent.com";
-=======
         private const string Host = "github.com";
         private const string Url_0_1 = "https://github.com/{0}/{1}";
 		private const string Host2 = "raw.githubusercontent.com";
@@ -36,7 +32,6 @@ namespace KSPModAdmin.Core.Utils.SiteHandler
 
             return string.Empty;
         }
->>>>>>> Mac-master
 
 		/// <summary>
 		/// Gets the Name of the ISiteHandler.
